@@ -1,18 +1,29 @@
 <template>
   <v-card class="pa-4 mb-4" elevation="2">
-    <v-card-title class="text-h6">{{
-      instructorEdit ? 'Editar Instructor' : 'Nuevo Instructor'
-    }}</v-card-title>
+    <v-card-title class="text-h6">
+      {{ instructorEdit ? 'Editar Instructor' : 'Nuevo Instructor' }}
+    </v-card-title>
 
     <v-card-text>
       <v-row dense>
         <v-col cols="12" sm="6">
-          <v-text-field label="Nombre completo" v-model="form.nombre_completo" required />
-        </v-col>
-        <v-col cols="12" sm="6">
           <v-text-field
-            label="Instrumento principal"
-            v-model="form.instrumento_principal"
+            label="Nombre completo"
+            v-model="form.nombre_completo"
+            @input="soloLetras"
+            required
+          />
+        </v-col>
+
+        <v-col cols="12" sm="6">
+          <v-select
+            label="Instrumentos"
+            v-model="form.instrumento_ids"
+            :items="instrumentos"
+            item-title="nombre"
+            item-value="id"
+            multiple
+            chips
             required
           />
         </v-col>
@@ -21,29 +32,38 @@
 
     <v-card-actions>
       <v-btn color="primary" @click="emitirGuardar">GUARDAR</v-btn>
-      <v-btn text @click="emit('cancelar')">CANCELAR</v-btn>
+      <v-btn text @click="limpiarFormulario">LIMPIAR</v-btn>
     </v-card-actions>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import { watch, reactive } from 'vue'
+import { ref, watch, reactive, onMounted } from 'vue'
+import { obtenerInstrumentos } from '@/service/InstrumentoService'
 
 const props = defineProps<{
   instructorEdit: {
+    id?: number
     nombre_completo: string
-    instrumento_principal: string
+    instrumento_ids: number[]
+    instrumentos?: { id: number }[]
   } | null
 }>()
 
 const emit = defineEmits<{
-  (e: 'guardar', data: { nombre_completo: string; instrumento_principal: string }): void
+  (e: 'guardar', data: { nombre_completo: string; instrumento_ids: number[] }): void
   (e: 'cancelar'): void
 }>()
 
 const form = reactive({
   nombre_completo: '',
-  instrumento_principal: '',
+  instrumento_ids: [] as number[],
+})
+
+const instrumentos = ref<{ id: number; nombre: string }[]>([])
+
+onMounted(async () => {
+  instrumentos.value = await obtenerInstrumentos()
 })
 
 watch(
@@ -51,18 +71,28 @@ watch(
   (val) => {
     if (val) {
       form.nombre_completo = val.nombre_completo
-      form.instrumento_principal = val.instrumento_principal
+      form.instrumento_ids = val.instrumentos?.map((i) => i.id) || []
     } else {
       form.nombre_completo = ''
-      form.instrumento_principal = ''
+      form.instrumento_ids = []
     }
   },
   { immediate: true },
 )
 
 function emitirGuardar() {
-  if (!form.nombre_completo || !form.instrumento_principal) return
   emit('guardar', { ...form })
-  // ❌ No se limpia aquí. Se limpia con el watch cuando instructorEdit cambia en el padre.
+}
+
+function limpiarFormulario() {
+  form.nombre_completo = ''
+  form.instrumento_ids = []
+  emit('cancelar')
+}
+
+function soloLetras(e: Event) {
+  const input = e.target as HTMLInputElement
+  input.value = input.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '')
+  form.nombre_completo = input.value
 }
 </script>

@@ -1,8 +1,10 @@
 <template>
   <v-app>
-    <!-- Barra superior -->
-    <v-app-bar app flat color="primary" dark>
-      <v-app-bar-title>Mi Aplicación</v-app-bar-title>
+    <!-- Barra superior centrada -->
+    <v-app-bar app flat color="#BCAAA4" dark>
+      <div class="d-flex justify-center w-100">
+        <v-app-bar-title class="text-center">Mi Aplicación</v-app-bar-title>
+      </div>
     </v-app-bar>
 
     <!-- Contenido principal -->
